@@ -814,6 +814,7 @@ void PopupMenu::showStarted() {
 		show();
 		if (weak) {
 			startShowAnimation();
+			Integration::Instance().preparePopupMenu(this);
 		}
 		return;
 	} else if (!_hiding) {
@@ -1148,6 +1149,7 @@ void PopupMenu::showPrepared(TriggeredSource source) {
 	// its own setVisible() is the reported shape - so nothing below may touch
 	// the menu without checking that it is still there.
 	const auto weak = base::make_weak(this);
+	Integration::Instance().preparePopupMenu(this);
 	show();
 	if (!weak) {
 		return;
