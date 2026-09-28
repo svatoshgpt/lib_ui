@@ -34,8 +34,8 @@ Box {
 	shadowIgnoreBottomSkip: bool;
 }
 
-boxDuration: 200;
-boxRadius: 6px;
+boxDuration: 250;
+boxRadius: 8px;
 
 boxButtonFont: font(boxFontSize semibold);
 defaultBoxButtonTextStyle: TextStyle(semiboldTextStyle) {

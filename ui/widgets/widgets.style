@@ -728,6 +728,7 @@ defaultActiveButton: RoundButton {
 	width: -34px;
 	height: 34px;
 	padding: margins(0px, 0px, 0px, 0px);
+	radius: 16px;
 
 	textTop: 8px;
 
@@ -810,9 +811,7 @@ defaultScrollArea: ScrollArea {
 	barBg: scrollBarBg;
 	barBgOver: scrollBarBgOver;
 
-	round: 2px;
-
-	width: 10px;
+	width: 9px;
 	minHeight: 20px;
 	deltax: 3px;
 	deltat: 3px;
@@ -836,7 +835,7 @@ defaultSolidScroll: ScrollArea(defaultScrollArea) {
 	hiding: 0;
 }
 
-defaultCheckboxIcon: icon {{ "default_checkbox_check", overviewCheckFgActive, point(4px, 7px) }};
+defaultCheckboxIcon: icon {{ "default_checkbox_check", overviewCheckFgActive, point(4px, 6px) }};
 
 defaultCheck: Check {
 	bg: transparent;
@@ -867,11 +866,11 @@ defaultToggle: Toggle {
 	toggledFg: windowBgActive;
 	untoggledBg: windowBg;
 	untoggledFg: checkboxFg;
-    duration: 150;
+	duration: universalDuration;
 	border: 2px;
 	shift: -2px;
-	diameter: 14px;
-	width: 14px;
+	diameter: 16px;
+	width: 15px;
 	animPadding: 2px;
 	xsize: 0px;
 	vsize: 0px;
@@ -970,7 +969,7 @@ defaultMenu: Menu {
 	itemFgShortcutOver: windowSubTextFgOver;
 	itemFgShortcutDisabled: menuFgDisabled;
 	itemIconPosition: point(0px, 0px);
-	itemPadding: margins(17px, 8px, 17px, 7px);
+	itemPadding: margins(17px, 8px, 17px, 8px);
 	itemRightSkip: 6px;
 	itemStyle: defaultTextStyle;
 	itemToggle: defaultMenuToggle;
@@ -996,9 +995,9 @@ defaultPopupMenu: PopupMenu {
 
 	menu: defaultMenu;
 
-	radius: 6px;
+	radius: 8px;
 	duration: 150;
-	showDuration: 200;
+	showDuration: 250;
 }
 
 defaultPillTabs: PillTabs {
@@ -1135,8 +1134,7 @@ defaultMultiSelect: MultiSelect {
 	scroll: ScrollArea(defaultSolidScroll) {
 		deltat: 3px;
 		deltab: 3px;
-		round: 1px;
-		width: 8px;
+		width: 9px;
 		deltax: 3px;
 		hiding: 1000;
 	}
@@ -1265,7 +1263,7 @@ defaultInnerDropdown: InnerDropdown {
 	}
 
 	duration: 150;
-	showDuration: 200;
+	showDuration: 250;
 
 	bg: menuBg;
 	scroll: defaultSolidScroll;

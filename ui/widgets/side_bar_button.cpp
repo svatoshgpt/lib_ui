@@ -164,9 +164,10 @@ int SideBarButton::resizeGetHeight(int newWidth) {
 
 void SideBarButton::paintEvent(QPaintEvent *e) {
 	auto p = Painter(this);
+	auto hq = PainterHighQualityEnabler(p);
 	const auto clip = e->rect();
 
-	const auto &bg = _active ? _st.textBgActive : _st.textBg;
+	const auto &bg = _st.textBg;
 	p.fillRect(clip, bg);
 
 	RippleButton::paintRipple(p, 0, 0);
@@ -179,6 +180,17 @@ void SideBarButton::paintEvent(QPaintEvent *e) {
 		const auto &icon = computeIcon();
 		const auto x = iconLeft();
 		const auto y = iconTop();
+		if (_active) {
+			const int capsulePaddingH = 8;
+			const int capsulePaddingV = -4;
+			const int capsuleWidth = icon.width() + 2 * capsulePaddingH;
+			const int capsuleHeight = icon.height() + 2 * capsulePaddingV;
+			const int radius = capsuleHeight / 2;
+			QRect capsuleRect(x - capsulePaddingH, y - capsulePaddingV, capsuleWidth, capsuleHeight);
+			p.setPen(Qt::NoPen);
+			p.setBrush(_st.textBgActive);
+			p.drawRoundedRect(capsuleRect, radius, radius);
+		}
 		if (_iconCacheBadgeWidth || (_lock.locked && !_showText)) {
 			validateIconCache();
 			p.drawImage(x, y, _active ? _iconCacheActive : _iconCache);

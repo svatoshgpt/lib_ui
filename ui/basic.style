@@ -104,8 +104,8 @@ linkCropLimit: 360px;
 linkFont: normalFont;
 linkFontOver: font(fsize underline);
 
-roundRadiusLarge: 6px;
-roundRadiusSmall: 3px;
+roundRadiusLarge: 10px;
+roundRadiusSmall: 2px;
 
 dateRadius: roundRadiusLarge;
 

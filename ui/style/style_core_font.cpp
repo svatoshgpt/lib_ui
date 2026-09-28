@@ -209,7 +209,7 @@ struct Metrics {
 	};
 
 	const auto family = font.family();
-	const auto basic = u"Open Sans"_q;
+	const auto basic = u"Google Sans"_q;
 	if (family == basic || !adjust) {
 		return simple();
 	}
@@ -348,7 +348,7 @@ struct Metrics {
 	} else if (overriden) {
 		font.setFamily(family);
 	} else {
-		font.setFamily("Open Sans"_q);
+		font.setFamily("Google Sans"_q);
 	}
 	font.setPixelSize(size);
 
@@ -368,7 +368,7 @@ struct Metrics {
 		if (font.bold()) {
 			const auto style = QFontInfo(font).styleName();
 			if (!style.isEmpty() && !style.startsWith(
-					"Semibold",
+					"Medium",
 					Qt::CaseInsensitive)) {
 				font.setBold(true);
 			}
@@ -402,7 +402,7 @@ void StartFonts() {
 
 	style_InitFontsResource();
 
-	const auto name = u"Open Sans"_q;
+	const auto name = u"Google Sans"_q;
 
 	for (const auto &file : QDir(u":/gui/fonts/"_q).entryInfoList()) {
 		const auto path = file.canonicalFilePath();
