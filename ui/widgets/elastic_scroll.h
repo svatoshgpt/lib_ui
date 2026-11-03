@@ -11,6 +11,7 @@
 #include "ui/rp_widget.h"
 #include "base/object_ptr.h"
 #include "base/timer.h"
+#include "ayu/smooth_scroll/smooth_scroll.h"
 
 namespace style {
 struct ScrollArea;
@@ -261,6 +262,11 @@ public:
 	void setBarTopInset(int inset);
 	void setBarBottomInset(int inset);
 
+	// AyuGram smooth scroll
+	void stopSmoothScroll() {
+		_smoothScroll->stop();
+	}
+
 private:
 	enum class WheelSource : uchar {
 		Wheel,
@@ -408,6 +414,9 @@ private:
 	rpl::event_stream<> _scrolls;
 	rpl::event_stream<> _innerResizes;
 	rpl::event_stream<> _geometryChanged;
+
+	// AyuGram smooth scroll
+	std::unique_ptr<SmoothScroll::Scroller> _smoothScroll;
 
 };
 

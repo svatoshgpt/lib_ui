@@ -16,6 +16,9 @@
 #include <QtWidgets/QScrollArea>
 #include <QtGui/QtEvents>
 
+
+// AyuGram includes
+#include "ayu/smooth_scroll/smooth_scroll.h"
 namespace Ui {
 
 // Touch flick ignore 3px.
@@ -211,6 +214,10 @@ public:
 
 	[[nodiscard]] rpl::producer<bool> touchMaybePressing() const;
 
+	// AyuGram smooth scroll
+	void stopSmoothScroll() const {
+		_smoothScroll->stop();
+	}
 protected:
 	bool eventHook(QEvent *e) override;
 	bool eventFilter(QObject *obj, QEvent *e) override;
@@ -277,6 +284,8 @@ private:
 	rpl::event_stream<> _innerResizes;
 	rpl::event_stream<> _geometryChanged;
 
+	// AyuGram smooth scroll
+	std::unique_ptr<SmoothScroll::Scroller> _smoothScroll;
 };
 
 template <typename Scroll>

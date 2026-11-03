@@ -14,6 +14,7 @@ QString monoFont;
 double wideMultiplier = 1.0;
 bool materialSwitches;
 int avatarCorners = kMaxAvatarCorners;
+bool smoothScroll = true;
 
 void setMonoFont(QString newFont) {
 	monoFont = std::move(newFont);
@@ -53,6 +54,14 @@ void setAvatarCorners(int val) {
 
 int getAvatarCorners() {
 	return avatarCorners;
+}
+
+void setSmoothScroll(bool val) {
+	smoothScroll = val;
+}
+
+bool isSmoothScroll() {
+	return smoothScroll;
 }
 
 }

@@ -24,4 +24,7 @@ bool isMaterialSwitches();
 void setAvatarCorners(int val);
 int getAvatarCorners();
 
+void setSmoothScroll(bool val);
+bool isSmoothScroll();
+
 }

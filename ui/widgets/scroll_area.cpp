@@ -444,6 +444,16 @@ ScrollArea::ScrollArea(
 		_touchTimer.setCallback([=] { _touchRightButton = true; });
 		_touchScrollTimer.setCallback([=] { touchScrollTimer(); });
 	}
+
+	// AyuGram smooth scroll
+	_smoothScroll = std::make_unique<SmoothScroll::Scroller>(
+		SmoothScroll::Config{
+			.getScroll = [this] { return scrollTop(); },
+			.setScroll = [this](int v) { scrollToY(v); },
+			.getNewTarget = [vbar = verticalScrollBar()](int t) {
+				return std::clamp(t, vbar->minimum(), vbar->maximum());
+			},
+		});
 }
 
 void ScrollArea::touchDeaccelerate(int32 elapsed) {
@@ -649,6 +659,24 @@ bool ScrollArea::viewportEvent(QEvent *e) {
 						phase);
 			}
 		}
+		// AyuGram smooth scroll: plain wheel steps on a vertical list.
+		if (ev->phase() == Qt::NoScrollPhase) {
+			const auto unmultiplied = ScrollDelta(ev);
+			const auto multiply = ev->modifiers()
+				& (Qt::ControlModifier | Qt::ShiftModifier);
+			const auto deltaY = multiply
+				? int(unmultiplied.y() * std::max(height(), 120) / 120.)
+				: unmultiplied.y();
+			const auto vbar = verticalScrollBar();
+			if (deltaY
+				&& std::abs(deltaY) >= std::abs(unmultiplied.x())
+				&& vbar->minimum() < vbar->maximum()
+				&& _smoothScroll->handleScroll(-deltaY)) {
+				return true;
+			}
+		} else {
+			_smoothScroll->stop();
+		}
 	}
 	return QScrollArea::viewportEvent(e);
 }
@@ -673,6 +701,7 @@ bool ScrollArea::filterOutTouchEvent(QEvent *e) {
 }
 
 void ScrollArea::touchEvent(QTouchEvent *e) {
+	stopSmoothScroll();
 	if (!e->touchPoints().isEmpty()) {
 		_touchPrevPos = _touchPos;
 		_touchPos = e->touchPoints().cbegin()->screenPos().toPoint();
@@ -962,6 +991,9 @@ bool ScrollArea::focusNextPrevChild(bool next) {
 }
 
 void ScrollArea::setMovingByScrollBar(bool movingByScrollBar) {
+	if (movingByScrollBar) {
+		stopSmoothScroll();
+	}
 	_movingByScrollBar = movingByScrollBar;
 }
 
