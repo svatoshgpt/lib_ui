@@ -10,50 +10,6 @@
 #include <utility>
 
 namespace SmoothScroll {
-namespace {
-
-bool HandleScrollLogic(
-	int delta,
-	Ui::Animations::Simple &animation,
-	float64 &targetValue,
-	const Config &config,
-	anim::transition easing,
-	crl::time duration) {
-	if (!AyuUiSettings::isSmoothScroll()) {
-		// default scroll will be used instead
-		return false;
-	}
-
-	if (delta == 0) {
-		return true;
-	}
-
-	const auto from = config.getScroll();
-	const auto currentTarget = animation.animating()
-								   ? targetValue
-								   : float64(from);
-
-	const auto newTarget = config.getNewTarget(currentTarget + delta);
-
-	if (newTarget != int(currentTarget)) {
-		targetValue = newTarget;
-		animation.start(
-			[&, setScroll = config.setScroll](float64 value)
-			{
-				setScroll(base::SafeRound(value));
-				if (!animation.animating()) {
-					targetValue = -1.;
-				}
-			},
-			from,
-			newTarget,
-			duration,
-			easing);
-	}
-	return true;
-}
-
-}
 
 Scroller::Scroller(
 	Config config,
@@ -65,50 +21,55 @@ Scroller::Scroller(
 }
 
 bool Scroller::handleScroll(int delta) {
-	return HandleScrollLogic(
-		delta,
-		_animation,
-		_targetValue,
-		_config,
-		_easing,
-		_duration);
+	if (!AyuUiSettings::isSmoothScroll()) {
+		return false;
+	} else if (delta == 0) {
+		return true;
+	}
+	const auto animating = _animation.animating();
+	if (animating) {
+		followExternalShift();
+	}
+	const auto now = _config.getScroll();
+	const auto current = animating ? _target : float64(now);
+	const auto newTarget = _config.getNewTarget(
+		int(base::SafeRound(current + delta)));
+	if (newTarget == int(base::SafeRound(current))) {
+		return true;
+	}
+	_from = now;
+	_target = newTarget;
+	_lastSet = now;
+	_animation.start(
+		[=](float64 progress) { step(progress); },
+		0.,
+		1.,
+		_duration,
+		_easing);
+	return true;
+}
+
+// A list loading more rows moves the scroll itself; the animation follows.
+void Scroller::followExternalShift() {
+	const auto shift = _config.getScroll() - _lastSet;
+	_from += shift;
+	_target += shift;
+	_lastSet += shift;
+}
+
+void Scroller::step(float64 progress) {
+	followExternalShift();
+	const auto value = _from + (_target - _from) * progress;
+	_config.setScroll(int(base::SafeRound(value)));
+	_lastSet = _config.getScroll();
 }
 
 void Scroller::stop() {
-	if (isAnimating()) {
-		_animation.stop();
-		_targetValue = -1.;
-	}
+	_animation.stop();
 }
 
 bool Scroller::isAnimating() const {
 	return _animation.animating();
-}
-
-// static methods
-bool Scroller::handleScroll(
-	int delta,
-	Ui::Animations::Simple &animation,
-	float64 &targetValue,
-	const Config &config,
-	anim::transition easing,
-	crl::time duration) {
-	return HandleScrollLogic(
-		delta,
-		animation,
-		targetValue,
-		config,
-		std::move(easing),
-		duration);
-}
-
-void Scroller::stop(
-	Ui::Animations::Simple &animation,
-	float64 &targetValue) {
-	if (animation.animating()) {
-		animation.stop();
-		targetValue = -1.;
-	}
 }
 
 } // namespace SmoothScroll

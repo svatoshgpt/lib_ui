@@ -32,25 +32,18 @@ public:
 	void stop();
 	[[nodiscard]] bool isAnimating() const;
 
-	static bool handleScroll(
-		int delta,
-		Ui::Animations::Simple &animation,
-		float64 &targetValue,
-		const Config &config,
-		anim::transition easing = anim::easeOutCubic,
-		crl::time duration = crl::time(300));
-
-	static void stop(
-		Ui::Animations::Simple &animation,
-		float64 &targetValue);
-
 private:
+	void followExternalShift();
+	void step(float64 progress);
+
 	Config _config;
 	anim::transition _easing;
 	crl::time _duration;
 
 	Ui::Animations::Simple _animation;
-	float64 _targetValue = -1.;
+	float64 _from = 0.;
+	float64 _target = 0.;
+	int _lastSet = 0;
 };
 
 } // namespace SmoothScroll
