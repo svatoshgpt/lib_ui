@@ -60,8 +60,14 @@ void Scroller::followExternalShift() {
 void Scroller::step(float64 progress) {
 	followExternalShift();
 	const auto value = _from + (_target - _from) * progress;
-	_config.setScroll(int(base::SafeRound(value)));
-	_lastSet = _config.getScroll();
+	const auto wanted = int(base::SafeRound(value));
+	_config.setScroll(wanted);
+	// Rows loaded while scrolling shift the list inside setScroll already.
+	const auto actual = _config.getScroll();
+	const auto shift = actual - _config.getNewTarget(wanted);
+	_from += shift;
+	_target += shift;
+	_lastSet = actual;
 }
 
 void Scroller::stop() {
