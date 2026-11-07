@@ -57,6 +57,17 @@ namespace {
 	return scToFrom;
 }
 
+// A list that loads more rows changes its size; the thumb glides there instead of jumping.
+constexpr auto kBarMoveDuration = crl::time(220);
+
+[[nodiscard]] QRect InterpolateBar(QRect from, QRect to, float64 progress) {
+	return QRect(
+		anim::interpolate(from.x(), to.x(), progress),
+		anim::interpolate(from.y(), to.y(), progress),
+		anim::interpolate(from.width(), to.width(), progress),
+		anim::interpolate(from.height(), to.height(), progress));
+}
+
 } // namespace
 
 // flick scroll taken from http://qt-project.org/doc/qt-4.8/demos-embedded-anomaly-src-flickcharm-cpp.html
@@ -138,7 +149,8 @@ void ScrollBar::setBottomSkip(int skip) {
 
 void ScrollBar::updateBar(bool force) {
 	QRect newBar;
-	if (_connected->maximum() != _scrollMax) {
+	const auto resized = (_connected->maximum() != _scrollMax);
+	if (resized) {
 		const auto oldMax = _scrollMax;
 		const auto newMax = _connected->maximum();
 		_scrollMax = newMax;
@@ -210,7 +222,17 @@ void ScrollBar::updateBar(bool force) {
 		newBar = QRect(x, _st->deltax, w, height() - 2 * _st->deltax);
 	}
 	if (newBar != _bar) {
+		const auto was = shownBar();
 		_bar = newBar;
+		if (resized && !_moving && !was.isEmpty()) {
+			_barMovedFrom = was;
+			_a_barMove.start(
+				[=] { update(); },
+				0.,
+				1.,
+				kBarMoveDuration,
+				anim::easeOutCubic);
+		}
 		update();
 	}
 	if (_vertical) {
@@ -291,6 +313,12 @@ void ScrollBar::setMoving(bool moving) {
 	}
 }
 
+QRect ScrollBar::shownBar() const {
+	return (_a_barMove.animating() && !_bar.isEmpty())
+		? InterpolateBar(_barMovedFrom, _bar, _a_barMove.value(1.))
+		: _bar;
+}
+
 void ScrollBar::paintEvent(QPaintEvent *e) {
 	if (!_bar.width() && !_bar.height()) {
 		hide();
@@ -316,10 +344,10 @@ void ScrollBar::paintEvent(QPaintEvent *e) {
 		p.setBrush(bg);
 		p.drawRoundedRect(outer, radius, radius);
 		p.setBrush(bar);
-		p.drawRoundedRect(_bar, radius, radius);
+		p.drawRoundedRect(shownBar(), radius, radius);
 	} else {
 		p.fillRect(outer, bg);
-		p.fillRect(_bar, bar);
+		p.fillRect(shownBar(), bar);
 	}
 }
 
