@@ -7,17 +7,25 @@
 #include "smooth_scroll.h"
 
 #include "ayu/ayu_ui_settings.h"
+
+#include <cmath>
 #include <utility>
 
 namespace SmoothScroll {
+namespace {
+
+// Wheel steps add to one target the position eases to each frame, so the speed never restarts.
+constexpr auto kTimeConstant = 70.;
+constexpr auto kMaxFrameTime = crl::time(50);
+
+} // namespace
 
 Scroller::Scroller(
 	Config config,
-	anim::transition easing,
-	crl::time duration)
-	: _config(std::move(config))
-	  , _easing(std::move(easing))
-	  , _duration(duration) {
+	anim::transition,
+	crl::time)
+: _config(std::move(config))
+, _animation([=](crl::time now) { return step(now); }) {
 }
 
 bool Scroller::handleScroll(int delta) {
@@ -29,45 +37,53 @@ bool Scroller::handleScroll(int delta) {
 	const auto animating = _animation.animating();
 	if (animating) {
 		followExternalShift();
+	} else {
+		_position = _config.getScroll();
+		_lastSet = int(base::SafeRound(_position));
 	}
-	const auto now = _config.getScroll();
-	const auto current = animating ? _target : float64(now);
+	const auto from = animating ? _target : _position;
 	const auto newTarget = _config.getNewTarget(
-		int(base::SafeRound(current + delta)));
-	if (newTarget == int(base::SafeRound(current))) {
+		int(base::SafeRound(from + delta)));
+	if (newTarget == int(base::SafeRound(from))) {
 		return true;
 	}
-	_from = now;
 	_target = newTarget;
-	_lastSet = now;
-	_animation.start(
-		[=](float64 progress) { step(progress); },
-		0.,
-		1.,
-		_duration,
-		_easing);
+	if (!animating) {
+		_lastTime = crl::now();
+		_animation.start();
+	}
 	return true;
 }
 
 // A list loading more rows moves the scroll itself; the animation follows.
 void Scroller::followExternalShift() {
 	const auto shift = _config.getScroll() - _lastSet;
-	_from += shift;
+	_position += shift;
 	_target += shift;
 	_lastSet += shift;
 }
 
-void Scroller::step(float64 progress) {
+bool Scroller::step(crl::time now) {
 	followExternalShift();
-	const auto value = _from + (_target - _from) * progress;
-	const auto wanted = int(base::SafeRound(value));
+	const auto elapsed = std::clamp(now - _lastTime, crl::time(0), kMaxFrameTime);
+	_lastTime = now;
+	const auto part = 1. - std::exp(-float64(elapsed) / kTimeConstant);
+	_position += (_target - _position) * part;
+	const auto done = (std::abs(_target - _position) < 0.5);
+	if (done) {
+		_position = _target;
+	}
+	const auto wanted = int(base::SafeRound(_position));
 	_config.setScroll(wanted);
 	// Rows loaded while scrolling shift the list inside setScroll already.
 	const auto actual = _config.getScroll();
 	const auto shift = actual - _config.getNewTarget(wanted);
-	_from += shift;
+	_position += shift;
 	_target += shift;
 	_lastSet = actual;
+	// A list that got shorter can't reach the old target.
+	_target = _config.getNewTarget(int(base::SafeRound(_target)));
+	return !done;
 }
 
 void Scroller::stop() {

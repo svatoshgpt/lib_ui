@@ -34,16 +34,14 @@ public:
 
 private:
 	void followExternalShift();
-	void step(float64 progress);
+	bool step(crl::time now);
 
 	Config _config;
-	anim::transition _easing;
-	crl::time _duration;
-
-	Ui::Animations::Simple _animation;
-	float64 _from = 0.;
+	Ui::Animations::Basic _animation;
+	float64 _position = 0.;
 	float64 _target = 0.;
 	int _lastSet = 0;
+	crl::time _lastTime = 0;
 };
 
 } // namespace SmoothScroll
