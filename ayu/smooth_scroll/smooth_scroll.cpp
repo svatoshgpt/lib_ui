@@ -14,16 +14,13 @@
 namespace SmoothScroll {
 namespace {
 
-// Wheel steps add to one target the position eases to each frame, so the speed never restarts.
-constexpr auto kTimeConstant = 70.;
+// Each frame scrolls by a part of what is left, never to a fixed position, so a list moving itself is never fought.
+constexpr auto kTimeConstant = 60.;
 constexpr auto kMaxFrameTime = crl::time(50);
 
 } // namespace
 
-Scroller::Scroller(
-	Config config,
-	anim::transition,
-	crl::time)
+Scroller::Scroller(Config config)
 : _config(std::move(config))
 , _animation([=](crl::time now) { return step(now); }) {
 }
@@ -35,19 +32,18 @@ bool Scroller::handleScroll(int delta) {
 		return true;
 	}
 	const auto animating = _animation.animating();
-	if (animating) {
-		followExternalShift();
-	} else {
-		_position = _config.getScroll();
-		_lastSet = int(base::SafeRound(_position));
+	if (animating && ((_pending < 0.) != (delta < 0))) {
+		_pending = _carry = 0.;
 	}
-	const auto from = animating ? _target : _position;
-	const auto newTarget = _config.getNewTarget(
-		int(base::SafeRound(from + delta)));
-	if (newTarget == int(base::SafeRound(from))) {
-		return true;
+	if (!animating || _pending == 0.) {
+		// Nothing to scroll here: let the wheel reach the parent.
+		const auto from = _config.getScroll();
+		if (_config.getNewTarget(from + delta) == from) {
+			stop();
+			return false;
+		}
 	}
-	_target = newTarget;
+	_pending += delta;
 	if (!animating) {
 		_lastTime = crl::now();
 		_animation.start();
@@ -55,39 +51,42 @@ bool Scroller::handleScroll(int delta) {
 	return true;
 }
 
-// A list loading more rows moves the scroll itself; the animation follows.
-void Scroller::followExternalShift() {
-	const auto shift = _config.getScroll() - _lastSet;
-	_position += shift;
-	_target += shift;
-	_lastSet += shift;
+bool Scroller::scrollBy(int delta) {
+	const auto from = _config.getScroll();
+	const auto to = _config.getNewTarget(from + delta);
+	if (to != from) {
+		_config.setScroll(to);
+	}
+	return (to - from) == delta;
 }
 
 bool Scroller::step(crl::time now) {
-	followExternalShift();
 	const auto elapsed = std::clamp(now - _lastTime, crl::time(0), kMaxFrameTime);
 	_lastTime = now;
 	const auto part = 1. - std::exp(-float64(elapsed) / kTimeConstant);
-	_position += (_target - _position) * part;
-	const auto done = (std::abs(_target - _position) < 0.5);
-	if (done) {
-		_position = _target;
+	auto amount = _pending * part;
+	const auto finish = (std::abs(_pending - amount) < 0.5);
+	if (finish) {
+		amount = _pending;
 	}
-	const auto wanted = int(base::SafeRound(_position));
-	_config.setScroll(wanted);
-	// Rows loaded while scrolling shift the list inside setScroll already.
-	const auto actual = _config.getScroll();
-	const auto shift = actual - _config.getNewTarget(wanted);
-	_position += shift;
-	_target += shift;
-	_lastSet = actual;
-	// A list that got shorter can't reach the old target.
-	_target = _config.getNewTarget(int(base::SafeRound(_target)));
-	return !done;
+	_pending -= amount;
+	const auto total = amount + _carry;
+	const auto move = int(finish ? std::round(total) : std::trunc(total));
+	_carry = total - move;
+	if (move != 0 && !scrollBy(move)) {
+		// Reached an edge.
+		_pending = _carry = 0.;
+		return false;
+	} else if (finish) {
+		_pending = _carry = 0.;
+		return false;
+	}
+	return true;
 }
 
 void Scroller::stop() {
 	_animation.stop();
+	_pending = _carry = 0.;
 }
 
 bool Scroller::isAnimating() const {

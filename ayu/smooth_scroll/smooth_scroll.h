@@ -23,24 +23,20 @@ struct Config
 class Scroller
 {
 public:
-	explicit Scroller(
-		Config config,
-		anim::transition easing = anim::easeOutCubic,
-		crl::time duration = crl::time(300));
+	explicit Scroller(Config config);
 
 	bool handleScroll(int delta);
 	void stop();
 	[[nodiscard]] bool isAnimating() const;
 
 private:
-	void followExternalShift();
 	bool step(crl::time now);
+	bool scrollBy(int delta);
 
 	Config _config;
 	Ui::Animations::Basic _animation;
-	float64 _position = 0.;
-	float64 _target = 0.;
-	int _lastSet = 0;
+	float64 _pending = 0.;
+	float64 _carry = 0.;
 	crl::time _lastTime = 0;
 };
 
