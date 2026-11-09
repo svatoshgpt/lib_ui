@@ -107,17 +107,6 @@ constexpr auto kPullBandStiffness = 2.5;
 // higher is an artifact of the per-event-pair velocity estimation.
 constexpr auto kMaxTrackedVelocity = 6000.;
 
-// A list that loads more rows changes its size; the thumb glides there instead of jumping.
-constexpr auto kBarMoveDuration = crl::time(220);
-
-[[nodiscard]] QRect InterpolateBar(QRect from, QRect to, float64 progress) {
-	return QRect(
-		anim::interpolate(from.x(), to.x(), progress),
-		anim::interpolate(from.y(), to.y(), progress),
-		anim::interpolate(from.width(), to.width(), progress),
-		anim::interpolate(from.height(), to.height(), progress));
-}
-
 } // namespace
 
 // Flick scroll taken from
@@ -269,28 +258,10 @@ rpl::producer<int> ElasticScrollBar::visibleFromDragged() const {
 
 void ElasticScrollBar::updateState(ScrollState state) {
 	if (_state != state) {
-		const auto resized = (_state.fullSize > 0)
-			&& (_state.fullSize != state.fullSize);
-		const auto was = shownBar();
 		_state = state;
 		refreshGeometry();
-		if (resized && !_dragging && !was.isEmpty() && was != _bar) {
-			_barMovedFrom = was;
-			_barMoveAnimation.start(
-				[=] { update(); },
-				0.,
-				1.,
-				kBarMoveDuration,
-				anim::easeOutCubic);
-		}
 		toggle(true);
 	}
-}
-
-QRect ElasticScrollBar::shownBar() const {
-	return (_barMoveAnimation.animating() && !_bar.isEmpty())
-		? InterpolateBar(_barMovedFrom, _bar, _barMoveAnimation.value(1.))
-		: _bar;
 }
 
 void ElasticScrollBar::paintEvent(QPaintEvent *e) {
@@ -323,10 +294,10 @@ void ElasticScrollBar::paintEvent(QPaintEvent *e) {
 		p.setBrush(bg);
 		p.drawRoundedRect(_area, radius, radius);
 		p.setBrush(bar);
-		p.drawRoundedRect(shownBar(), radius, radius);
+		p.drawRoundedRect(_bar, radius, radius);
 	} else {
 		p.fillRect(_area, bg);
-		p.fillRect(shownBar(), bar);
+		p.fillRect(_bar, bar);
 	}
 }
 

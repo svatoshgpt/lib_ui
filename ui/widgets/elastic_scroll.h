@@ -67,14 +67,11 @@ private:
 		anim::type animated = anim::type::normal);
 	void startBarHighlightAnimation(bool wasHighlighted);
 	void refreshGeometry();
-	[[nodiscard]] QRect shownBar() const;
 
 	const style::ScrollArea &_st;
 	Ui::Animations::Simple _shownAnimation;
 	Ui::Animations::Simple _overAnimation;
 	Ui::Animations::Simple _barHighlightAnimation;
-	Ui::Animations::Simple _barMoveAnimation;
-	QRect _barMovedFrom;
 	base::Timer _hideTimer;
 	rpl::event_stream<int> _visibleFromDragged;
 	int _dragOverscrollAccumulated = 0;

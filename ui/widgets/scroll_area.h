@@ -101,7 +101,6 @@ private:
 	void setMoving(bool moving);
 
 	void hideTimer();
-	[[nodiscard]] QRect shownBar() const;
 
 	const style::ScrollArea *_st;
 
@@ -126,10 +125,8 @@ private:
 	Animations::Simple _a_over;
 	Animations::Simple _a_barOver;
 	Animations::Simple _a_opacity;
-	Animations::Simple _a_barMove;
 
 	QRect _bar;
-	QRect _barMovedFrom;
 
 	rpl::event_stream<ShadowVisibility> _shadowVisibilityChanged;
 };
