@@ -913,6 +913,9 @@ SettingsButton *SettingsButton::toggleOn(
 		accessibilityStateChanged({ .checked = true });
 	}, lifetime());
 	_toggle->finishAnimating();
+	if (_allowTextLines != 1) {
+		resizeToWidth(widthNoMargins());
+	}
 	return this;
 }
 
@@ -958,6 +961,18 @@ void SettingsButton::setPaddingOverride(style::margins padding) {
 	resizeToWidth(widthNoMargins());
 }
 
+void SettingsButton::setAllowTextLines(int lines) {
+	const auto wrapChanged = ((_allowTextLines == 1) != (lines == 1));
+	_allowTextLines = lines;
+	if (wrapChanged) {
+		// An export of _text would lose colorized parts and custom objects.
+		auto source = _textSource;
+		setText(std::move(source));
+	}
+	resizeToWidth(widthNoMargins());
+	update();
+}
+
 const style::SettingsButton &SettingsButton::st() const {
 	return _st;
 }
@@ -987,10 +1002,7 @@ void SettingsButton::paintBg(Painter &p, const QRect &rect, bool over) const {
 }
 
 void SettingsButton::paintText(Painter &p, bool over, int outerw) const {
-	auto available = outerw - _padding.left() - _padding.right();
-	if (_toggle) {
-		available -= (width() - toggleRect().x());
-	}
+	const auto available = textAvailableWidth(outerw);
 	if (available <= 0) {
 		return;
 	}
@@ -1004,7 +1016,15 @@ void SettingsButton::paintText(Painter &p, bool over, int outerw) const {
 		_padding.left(),
 		_padding.top(),
 		available,
-		outerw);
+		outerw,
+		_allowTextLines);
+}
+
+int SettingsButton::textAvailableWidth(int outerw) const {
+	return outerw
+		- _padding.left()
+		- _padding.right()
+		- (_toggle ? (_st.toggleSkip + _toggle->getSize().width()) : 0);
 }
 
 void SettingsButton::paintToggle(Painter &p, int outerw) const {
@@ -1028,7 +1048,17 @@ QRect SettingsButton::maybeToggleRect() const {
 }
 
 int SettingsButton::resizeGetHeight(int newWidth) {
-	return _padding.top() + _st.height + _padding.bottom();
+	const auto single = _padding.top() + _st.height + _padding.bottom();
+	const auto available = textAvailableWidth(newWidth);
+	if (_allowTextLines == 1 || available <= 0 || _text.isEmpty()) {
+		return single;
+	}
+	const auto height = _text.countDimensions(Text::SimpleGeometry(
+		available,
+		_allowTextLines,
+		0,
+		false)).height;
+	return std::max(single, single - _text.lineHeight() + height);
 }
 
 void SettingsButton::onStateChanged(
@@ -1048,8 +1078,16 @@ void SettingsButton::onStateChanged(
 }
 
 void SettingsButton::setText(TextWithEntities &&text) {
-	_text.setMarkedText(_st.style, text, kMarkupTextOptions, _context);
+	const auto minResizeWidth = (_allowTextLines == 1) ? kQFixedMax : 1;
+	if (_text.minResizeWidth() != minResizeWidth) {
+		_text = Text::String(minResizeWidth);
+	}
+	_textSource = std::move(text);
+	_text.setMarkedText(_st.style, _textSource, kMarkupTextOptions, _context);
 	accessibilityNameChanged();
+	if (_allowTextLines != 1) {
+		resizeToWidth(widthNoMargins());
+	}
 	update();
 }
 
