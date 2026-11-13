@@ -383,17 +383,8 @@ ElasticScroll::ElasticScroll(
 , _movement(Movement::None) {
 	setAttribute(Qt::WA_AcceptTouchEvents);
 
-	// AyuGram smooth scroll
-	_smoothScroll = std::make_unique<SmoothScroll::Scroller>(
-		SmoothScroll::Config{
-			.getScroll = [this] { return _state.visibleFrom; },
-			.setScroll = [this](int v) { applyScrollTo(v); },
-			.getNewTarget = [this](int t) { return willScrollTo(t); },
-		});
-
 	_bar->visibleFromDragged(
 	) | rpl::on_next([=](int from) {
-		_smoothScroll->stop();
 		tryScrollTo(from, false);
 	}, _bar->lifetime());
 }
@@ -931,11 +922,7 @@ bool ElasticScroll::handleWheelEvent(
 			if (!weak) {
 				return true;
 			}
-			// AyuGram smooth scroll: only a real wheel, not touch.
-			if (source != WheelSource::Wheel
-				|| !_smoothScroll->handleScroll(delta)) {
-				tryScrollTo(_state.visibleFrom + delta);
-			}
+			tryScrollTo(_state.visibleFrom + delta);
 			_movement = Movement::None;
 		} else if (!_overscrollReturnAnimation.animating()) {
 			overscrollReturn();
@@ -944,7 +931,6 @@ bool ElasticScroll::handleWheelEvent(
 	}
 	const auto momentum = (phase == Qt::ScrollMomentum)
 		|| (phase == Qt::ScrollEnd);
-	_smoothScroll->stop();
 	trackWheelVelocity(phase, delta, crl::time(e->timestamp()));
 	if (_ignoreMomentumFromOverscroll) {
 		if (!momentum) {
