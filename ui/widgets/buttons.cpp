@@ -411,7 +411,15 @@ void RoundButton::setCornerRadii(
 }
 
 void RoundButton::resizeToText(const TextWithEntities &text) {
-	_text.setMarkedText(_st.style, text, kMarkupTextOptions, _context);
+	if (_transform == RoundButtonTextTransform::ToUpper) {
+		_text.setMarkedText(
+			_st.style,
+			{ Text::Upper(text.text), text.entities },
+			kMarkupTextOptions,
+			_context);
+	} else {
+		_text.setMarkedText(_st.style, text, kMarkupTextOptions, _context);
+	}
 	int innerWidth = _text.maxWidth() + addedWidth();
 	if (_fullWidthOverride > 0) {
 		const auto padding = _fullRadius
