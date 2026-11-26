@@ -188,6 +188,7 @@ void SideBarButton::paintEvent(QPaintEvent *e) {
 		const auto x = iconLeft();
 		const auto y = iconTop();
 		if (_active) {
+			const auto &icon = computeIcon();
 			const int capsulePaddingH = 8;
 			const int capsulePaddingV = -4;
 			const int capsuleWidth = icon.width() + 2 * capsulePaddingH;
